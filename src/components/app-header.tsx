@@ -1,5 +1,6 @@
 import NextLink from "next/link";
 import { Container, Flex, Heading, Link } from "@radix-ui/themes";
+import { ThemeToggle } from "./theme-toggle";
 
 export function AppHeader() {
   return (
@@ -12,9 +13,12 @@ export function AppHeader() {
             </Heading>
           </NextLink>
         </Link>
-        <Link asChild size="2" color="gray">
-          <NextLink href="/settings">Settings</NextLink>
-        </Link>
+        <Flex align="center" gap="3">
+          <ThemeToggle />
+          <Link asChild size="2" color="gray">
+            <NextLink href="/settings">Settings</NextLink>
+          </Link>
+        </Flex>
       </Flex>
     </Container>
   );

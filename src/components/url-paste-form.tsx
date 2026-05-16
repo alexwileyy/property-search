@@ -40,7 +40,7 @@ export function UrlPasteForm() {
             style={{ flex: 1 }}
           />
           <Button type="submit" size="3" disabled={pending}>
-            {pending ? "Saving..." : "Save"}
+            {pending ? "Importing..." : "Import"}
           </Button>
         </Flex>
       </form>

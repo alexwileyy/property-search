@@ -8,3 +8,92 @@ html,
 body {
   font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
 }
+
+.prose-notes {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--gray-12);
+}
+.prose-notes :first-child {
+  margin-top: 0;
+}
+.prose-notes :last-child {
+  margin-bottom: 0;
+}
+.prose-notes p,
+.prose-notes ul,
+.prose-notes ol,
+.prose-notes blockquote,
+.prose-notes pre,
+.prose-notes table {
+  margin: 0.75em 0;
+}
+.prose-notes h1,
+.prose-notes h2,
+.prose-notes h3,
+.prose-notes h4 {
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 1.2em 0 0.4em;
+}
+.prose-notes h1 { font-size: 1.4em; }
+.prose-notes h2 { font-size: 1.2em; }
+.prose-notes h3 { font-size: 1.05em; }
+.prose-notes ul,
+.prose-notes ol {
+  padding-left: 1.5em;
+}
+.prose-notes li { margin: 0.25em 0; }
+.prose-notes a {
+  color: var(--accent-11);
+  text-decoration: underline;
+}
+.prose-notes blockquote {
+  padding-left: 0.9em;
+  border-left: 3px solid var(--gray-6);
+  color: var(--gray-11);
+}
+.prose-notes code {
+  background: var(--gray-3);
+  padding: 0 4px;
+  border-radius: 3px;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.9em;
+}
+.prose-notes pre {
+  background: var(--gray-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-3);
+  overflow-x: auto;
+}
+.prose-notes pre code {
+  background: transparent;
+  padding: 0;
+}
+.prose-notes hr {
+  border: 0;
+  border-top: 1px solid var(--gray-5);
+  margin: 1.25em 0;
+}
+.prose-notes table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.prose-notes th,
+.prose-notes td {
+  border: 1px solid var(--gray-5);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.prose-description {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--gray-12);
+  white-space: pre-wrap;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

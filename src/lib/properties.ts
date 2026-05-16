@@ -103,6 +103,47 @@ export async function getBoard(): Promise<Board> {
   return board;
 }
 
+export async function getProperty(id: string): Promise<Property | null> {
+  const [row] = await db
+    .select()
+    .from(properties)
+    .where(eq(properties.id, id));
+  return row ?? null;
+}
+
+export async function updateNotes(
+  id: string,
+  notes: string | null,
+): Promise<void> {
+  await db
+    .update(properties)
+    .set({ notes, updatedAt: sql`now()` })
+    .where(eq(properties.id, id));
+}
+
+export async function deleteProperty(id: string): Promise<void> {
+  await db.delete(properties).where(eq(properties.id, id));
+}
+
+export async function setFeatureImage(
+  id: string,
+  imageUrl: string,
+): Promise<void> {
+  const property = await getProperty(id);
+  if (!property) throw new Error("Property not found");
+  const idx = property.images.findIndex((img) => img.url === imageUrl);
+  if (idx <= 0) return;
+  const reordered = [
+    property.images[idx],
+    ...property.images.slice(0, idx),
+    ...property.images.slice(idx + 1),
+  ];
+  await db
+    .update(properties)
+    .set({ images: reordered, updatedAt: sql`now()` })
+    .where(eq(properties.id, id));
+}
+
 export async function moveProperty(
   propertyId: string,
   toStatus: PropertyStatus,
