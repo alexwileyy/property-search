@@ -2,20 +2,21 @@ import {
   Box,
   Container,
   Flex,
-  Grid,
   Heading,
   Separator,
   Text,
 } from "@radix-ui/themes";
 import { AppHeader } from "@/components/app-header";
-import { PropertyCard } from "@/components/property-card";
+import { KanbanBoard } from "@/components/kanban-board";
 import { UrlPasteForm } from "@/components/url-paste-form";
-import { listProperties } from "@/lib/properties";
+import { getBoard } from "@/lib/properties";
+import { STATUS_ORDER } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const properties = await listProperties();
+  const board = await getBoard();
+  const total = STATUS_ORDER.reduce((sum, s) => sum + board[s].length, 0);
 
   return (
     <Box>
@@ -40,27 +41,14 @@ export default async function HomePage() {
           <Box>
             <Flex justify="between" align="baseline" mb="4">
               <Heading size="6" weight="bold">
-                Saved properties
+                Board
               </Heading>
               <Text size="2" color="gray">
-                {properties.length} saved
+                {total} saved
               </Text>
             </Flex>
 
-            {properties.length === 0 ? (
-              <Text size="2" color="gray">
-                Nothing saved yet. Paste a URL above to get started.
-              </Text>
-            ) : (
-              <Grid
-                columns={{ initial: "1", sm: "2", md: "3" }}
-                gap="4"
-              >
-                {properties.map((p) => (
-                  <PropertyCard key={p.id} property={p} />
-                ))}
-              </Grid>
-            )}
+            <KanbanBoard initialBoard={board} />
           </Box>
         </Flex>
       </Container>

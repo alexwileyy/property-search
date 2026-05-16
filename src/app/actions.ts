@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { extractPropertyFromHtml } from "@/lib/extraction";
-import { upsertParsedProperty } from "@/lib/properties";
+import { moveProperty, upsertParsedProperty } from "@/lib/properties";
+import type { PropertyStatus } from "@/db/schema";
 import { canServerFetch, detectSource } from "@/lib/source";
 
 const REALISTIC_UA =
@@ -66,6 +67,21 @@ export async function addPropertyByUrl(
     return { ok: false, error: `Extraction failed: ${String(err)}` };
   }
 
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export type MoveResult = { ok: true } | { ok: false; error: string };
+
+export async function movePropertyAction(
+  propertyId: string,
+  toStatus: PropertyStatus,
+): Promise<MoveResult> {
+  try {
+    await moveProperty(propertyId, toStatus);
+  } catch (err) {
+    return { ok: false, error: `Move failed: ${String(err)}` };
+  }
   revalidatePath("/");
   return { ok: true };
 }

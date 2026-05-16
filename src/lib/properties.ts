@@ -1,7 +1,27 @@
-import { sql } from "drizzle-orm";
+import "server-only";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/db/client";
-import { properties, type NewProperty, type Property } from "@/db/schema";
+import {
+  properties,
+  statusHistory,
+  type NewProperty,
+  type Property,
+  type PropertyStatus,
+} from "@/db/schema";
 import type { ParsedProperty } from "./extraction";
+import type { Board } from "./status";
+
+function emptyBoard(): Board {
+  return {
+    interested: [],
+    viewing_booked: [],
+    viewing_attended: [],
+    second_viewing_booked: [],
+    second_viewing_attended: [],
+    offer_made: [],
+    rejected: [],
+  };
+}
 
 function toInsert(parsed: ParsedProperty): NewProperty {
   return {
@@ -71,5 +91,52 @@ export async function listProperties(): Promise<Property[]> {
   return db
     .select()
     .from(properties)
-    .orderBy(sql`${properties.createdAt} desc`);
+    .orderBy(sql`${properties.updatedAt} desc`);
+}
+
+export async function getBoard(): Promise<Board> {
+  const rows = await listProperties();
+  const board = emptyBoard();
+  for (const row of rows) {
+    board[row.status].push(row);
+  }
+  return board;
+}
+
+export async function moveProperty(
+  propertyId: string,
+  toStatus: PropertyStatus,
+): Promise<Property> {
+  return db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ status: properties.status })
+      .from(properties)
+      .where(eq(properties.id, propertyId));
+
+    if (!current) {
+      throw new Error("Property not found");
+    }
+
+    if (current.status === toStatus) {
+      const [unchanged] = await tx
+        .select()
+        .from(properties)
+        .where(eq(properties.id, propertyId));
+      return unchanged;
+    }
+
+    const [updated] = await tx
+      .update(properties)
+      .set({ status: toStatus, updatedAt: sql`now()` })
+      .where(eq(properties.id, propertyId))
+      .returning();
+
+    await tx.insert(statusHistory).values({
+      propertyId,
+      fromStatus: current.status,
+      toStatus,
+    });
+
+    return updated;
+  });
 }
