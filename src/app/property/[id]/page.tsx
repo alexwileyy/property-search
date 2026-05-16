@@ -245,6 +245,10 @@ export default async function PropertyDetailPage({
           <PropertyActions
             propertyId={property.id}
             source={property.source}
+            totalImages={property.images.length}
+            archivedImages={
+              property.images.filter((img) => !!img.sourceUrl).length
+            }
           />
         </Flex>
       </Container>

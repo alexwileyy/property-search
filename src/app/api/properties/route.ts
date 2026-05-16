@@ -1,8 +1,9 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { extractPropertyFromHtml } from "@/lib/extraction";
 import { upsertParsedProperty } from "@/lib/properties";
 import { canServerFetch, detectSource } from "@/lib/source";
+import { archivePropertyPhotos } from "@/lib/storage";
 
 export const maxDuration = 60;
 
@@ -95,5 +96,14 @@ export async function POST(req: NextRequest) {
   }
 
   const saved = await upsertParsedProperty(parsed);
+
+  after(async () => {
+    try {
+      await archivePropertyPhotos(saved.id);
+    } catch (err) {
+      console.warn(`[archive] background failed for ${saved.id}:`, err);
+    }
+  });
+
   return corsJson({ property: saved }, { status: 200 });
 }

@@ -31,7 +31,10 @@ export type PropertyStatus = (typeof propertyStatus.enumValues)[number];
 export type PropertySource = (typeof propertySource.enumValues)[number];
 
 export type PropertyImage = {
+  /** The URL to display. Points to the archived copy when sourceUrl is set, otherwise the original. */
   url: string;
+  /** Original source URL. Set after the image has been mirrored to our own storage. */
+  sourceUrl?: string;
   caption?: string;
 };
 

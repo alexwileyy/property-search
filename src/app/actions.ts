@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { extractPropertyFromHtml } from "@/lib/extraction";
@@ -13,6 +14,17 @@ import {
 } from "@/lib/properties";
 import type { PropertyStatus } from "@/db/schema";
 import { canServerFetch, detectSource } from "@/lib/source";
+import { archivePropertyPhotos } from "@/lib/storage";
+
+function scheduleArchive(propertyId: string) {
+  after(async () => {
+    try {
+      await archivePropertyPhotos(propertyId);
+    } catch (err) {
+      console.warn(`[archive] background failed for ${propertyId}:`, err);
+    }
+  });
+}
 
 const REALISTIC_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15";
@@ -71,7 +83,8 @@ export async function addPropertyByUrl(
 
   try {
     const parsed = await extractPropertyFromHtml(html, url.toString(), source);
-    await upsertParsedProperty(parsed);
+    const saved = await upsertParsedProperty(parsed);
+    scheduleArchive(saved.id);
   } catch (err) {
     return { ok: false, error: `Extraction failed: ${String(err)}` };
   }
@@ -137,7 +150,8 @@ export async function rescrapePropertyAction(
       property.url,
       property.source,
     );
-    await upsertParsedProperty(parsed);
+    const saved = await upsertParsedProperty(parsed);
+    scheduleArchive(saved.id);
   } catch (err) {
     return { ok: false, error: `Extraction failed: ${String(err)}` };
   }
@@ -165,4 +179,28 @@ export async function setFeatureImageAction(
   revalidatePath(`/property/${propertyId}`);
   revalidatePath("/");
   return { ok: true };
+}
+
+export type ArchiveResult =
+  | { ok: true; attempted: number; archived: number; remaining: number }
+  | { ok: false; error: string };
+
+export async function archivePhotosAction(
+  propertyId: string,
+): Promise<ArchiveResult> {
+  try {
+    const outcome = await archivePropertyPhotos(propertyId);
+    if (!outcome) {
+      return {
+        ok: false,
+        error:
+          "Supabase Storage isn't configured. Set SUPABASE_URL and SUPABASE_SECRET_KEY (sb_secret_...) in .env.local.",
+      };
+    }
+    revalidatePath(`/property/${propertyId}`);
+    revalidatePath("/");
+    return { ok: true, ...outcome };
+  } catch (err) {
+    return { ok: false, error: `Archive failed: ${String(err)}` };
+  }
 }
