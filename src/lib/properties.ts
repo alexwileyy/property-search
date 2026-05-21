@@ -14,6 +14,7 @@ import type { Board } from "./status";
 function emptyBoard(): Board {
   return {
     interested: [],
+    enquired: [],
     viewing_booked: [],
     viewing_attended: [],
     second_viewing_booked: [],

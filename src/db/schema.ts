@@ -13,6 +13,7 @@ import {
 
 export const propertyStatus = pgEnum("property_status", [
   "interested",
+  "enquired",
   "viewing_booked",
   "viewing_attended",
   "second_viewing_booked",
