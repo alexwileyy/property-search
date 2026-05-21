@@ -2,27 +2,31 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Callout, Flex, TextField } from "@radix-ui/themes";
+import { Button, Callout, Flex, Text, TextField } from "@radix-ui/themes";
 import { addPropertyByUrl } from "@/app/actions";
+
+type ImportErrors = { url: string; error: string }[];
 
 export function UrlPasteForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [successAt, setSuccessAt] = useState<number | null>(null);
+  const [errors, setErrors] = useState<ImportErrors>([]);
+  const [importedCount, setImportedCount] = useState<number | null>(null);
 
   function onSubmit(formData: FormData) {
-    setError(null);
+    setErrors([]);
+    setImportedCount(null);
     startTransition(async () => {
       const result = await addPropertyByUrl(formData);
-      if (!result.ok) {
-        setError(result.error);
-        return;
+      setErrors(result.errors);
+      setImportedCount(result.imported);
+      if (result.imported > 0 && result.errors.length === 0) {
+        formRef.current?.reset();
       }
-      formRef.current?.reset();
-      setSuccessAt(Date.now());
-      router.refresh();
+      if (result.imported > 0) {
+        router.refresh();
+      }
     });
   }
 
@@ -32,28 +36,44 @@ export function UrlPasteForm() {
         <Flex direction={{ initial: "column", sm: "row" }} gap="2">
           <TextField.Root
             name="url"
-            type="url"
-            placeholder="Paste a RightMove URL"
+            type="text"
+            placeholder="Paste a RightMove URL (or several, comma-separated)"
             size="3"
             required
             disabled={pending}
             style={{ flex: 1 }}
           />
-          <Button type="submit" size="3" disabled={pending}>
+          <Button type="submit" size="3" disabled={pending} loading={pending}>
             {pending ? "Importing..." : "Import"}
           </Button>
         </Flex>
       </form>
 
-      {error ? (
-        <Callout.Root color="crimson" variant="soft">
-          <Callout.Text>{error}</Callout.Text>
+      {importedCount !== null && importedCount > 0 ? (
+        <Callout.Root color="grass" variant="soft">
+          <Callout.Text>
+            {importedCount === 1
+              ? "Saved 1 property."
+              : `Saved ${importedCount} properties.`}
+          </Callout.Text>
         </Callout.Root>
       ) : null}
 
-      {successAt && !error ? (
-        <Callout.Root color="grass" variant="soft">
-          <Callout.Text>Saved.</Callout.Text>
+      {errors.length > 0 ? (
+        <Callout.Root color="crimson" variant="soft">
+          <Callout.Text>
+            {errors.length === 1
+              ? "1 URL failed to import:"
+              : `${errors.length} URLs failed to import:`}
+          </Callout.Text>
+          <Flex direction="column" gap="1" mt="2">
+            {errors.map((e, i) => (
+              <Text key={i} size="2">
+                {e.url ? <strong>{e.url}: </strong> : null}
+                {e.error}
+              </Text>
+            ))}
+          </Flex>
         </Callout.Root>
       ) : null}
     </Flex>

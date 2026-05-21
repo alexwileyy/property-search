@@ -45,19 +45,17 @@ async function fetchPropertyHtml(url: string): Promise<string> {
   return res.text();
 }
 
-export type AddByUrlResult = { ok: true } | { ok: false; error: string };
+export type AddByUrlResult = {
+  imported: number;
+  errors: { url: string; error: string }[];
+};
 
-export async function addPropertyByUrl(
-  formData: FormData,
-): Promise<AddByUrlResult> {
-  const raw = formData.get("url");
-  if (typeof raw !== "string" || !raw.trim()) {
-    return { ok: false, error: "Paste a property URL first." };
-  }
-
+async function importSingleUrl(
+  rawUrl: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   let url: URL;
   try {
-    url = new URL(raw.trim());
+    url = new URL(rawUrl);
   } catch {
     return { ok: false, error: "That doesn't look like a valid URL." };
   }
@@ -89,8 +87,49 @@ export async function addPropertyByUrl(
     return { ok: false, error: `Extraction failed: ${String(err)}` };
   }
 
-  revalidatePath("/");
   return { ok: true };
+}
+
+export async function addPropertyByUrl(
+  formData: FormData,
+): Promise<AddByUrlResult> {
+  const raw = formData.get("url");
+  if (typeof raw !== "string" || !raw.trim()) {
+    return {
+      imported: 0,
+      errors: [{ url: "", error: "Paste a property URL first." }],
+    };
+  }
+
+  const urls = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+  if (urls.length === 0) {
+    return {
+      imported: 0,
+      errors: [{ url: "", error: "Paste a property URL first." }],
+    };
+  }
+
+  const outcomes = await Promise.all(
+    urls.map(async (u) => ({ url: u, result: await importSingleUrl(u) })),
+  );
+
+  const errors = outcomes
+    .filter((o) => !o.result.ok)
+    .map((o) => ({
+      url: o.url,
+      error: (o.result as { ok: false; error: string }).error,
+    }));
+  const imported = outcomes.length - errors.length;
+
+  if (imported > 0) {
+    revalidatePath("/");
+  }
+
+  return { imported, errors };
 }
 
 export type MoveResult = { ok: true } | { ok: false; error: string };
